@@ -1,0 +1,68 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        "location",
+        "configurable"
+    ],
+    "companyName": "Kyle",
+    "longName": "Wikipedia",
+    "projectType": "pebblejs",
+    "resources": {
+        "media": [
+            {
+                "file": "images/menu_icon.png",
+                "name": "IMAGE_MENU_ICON",
+                "type": "bitmap"
+            },
+            {
+                "file": "images/logo_splash.png",
+                "name": "IMAGE_LOGO_SPLASH",
+                "type": "bitmap"
+            },
+            {
+                "file": "images/tile_splash.png",
+                "name": "IMAGE_TILE_SPLASH",
+                "type": "bitmap"
+            },
+            {
+                "file": "fonts/UbuntuMono-Regular.ttf",
+                "name": "MONO_FONT_14",
+                "type": "font"
+            },
+            {
+                "file": "images/menu.png",
+                "menuIcon": true,
+                "name": "IMAGES_MENU_PNG",
+                "type": "png"
+            },
+            {
+                "file": "images/pin.png",
+                "name": "IMAGES_PIN_PNG",
+                "type": "png"
+            },
+            {
+                "file": "images/dice.png",
+                "name": "IMAGES_DICE_PNG",
+                "type": "png"
+            },
+            {
+                "file": "images/warn.png",
+                "name": "IMAGES_WARN_PNG",
+                "type": "png"
+            }
+        ]
+    },
+    "sdkVersion": "3",
+    "shortName": "Wikipedia",
+    "targetPlatforms": [
+        "aplite",
+        "basalt"
+    ],
+    "uuid": "0915c0d0-f6fe-4132-9f36-8d1b78ae21a6",
+    "versionCode": 1,
+    "versionLabel": "2.1",
+    "watchapp": {
+        "hiddenApp": false,
+        "watchface": false
+    }
+}
