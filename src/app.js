@@ -30,17 +30,17 @@ var API_BASE_URL = 'http://kyle1.azurewebsites.net/pebble/wikipedia/v1/',
     });
 function DictationError(e) {
     return {
-        'noMicrophone': 'Dictation failed becasue there is no microphone',
-        'systemAborted': 'Dictation was aborted',
-        'transcriptionRejected': 'The transcription was rejected',
-        'transcriptionRejectedWithError': 'The transcription was rejected with an error',
-        'connectivityError': 'There was an error with the connection to the phone',
-        'noSpeechDetected': 'No speech detected',
-        'disabled': 'Dictation is disabled',
-        'internalError': 'There was an internal error',
-        'recognizerError': 'There was a recognizer error',
-        'sessionAlreadyInProgress': 'There is already a dictation session in progress',
-    }[e.err] || 'There was an unknown error';
+        'noMicrophone': 'Dictation failed becasue there is no microphone.',
+        'systemAborted': 'Dictation was aborted.',
+        'transcriptionRejected': 'The transcription was rejected.',
+        'transcriptionRejectedWithError': 'The transcription was rejected with an error.',
+        'connectivityError': 'There was an error with the connection to the phone.',
+        'noSpeechDetected': 'No speech detected.',
+        'disabled': 'Dictation is disabled.',
+        'internalError': 'There was an internal error.',
+        'recognizerError': 'There was a recognizer error.',
+        'sessionAlreadyInProgress': 'There is already a dictation session in progress.',
+    }[e.err] || 'There was an unknown error.';
 }
 function Show($input, $m, $itemIndex, $subtitle) {
     console.log(URL = API_BASE_URL + (settings.option('CC') || 'en') + '/get/' + encodeURIComponent($input) + '/' + token);
