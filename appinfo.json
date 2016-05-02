@@ -4,7 +4,7 @@
         "location",
         "configurable"
     ],
-    "companyName": "Kyle",
+    "companyName": "Kyle H.",
     "longName": "Wikipedia",
     "projectType": "pebblejs",
     "resources": {
@@ -46,6 +46,11 @@
                 "type": "png"
             },
             {
+                "file": "images/tile_splash.png",
+                "name": "IMAGES_TILE_SPLASH_PNG",
+                "type": "png"
+            },
+            {
                 "file": "images/warn.png",
                 "name": "IMAGES_WARN_PNG",
                 "type": "png"
@@ -60,7 +65,7 @@
     ],
     "uuid": "0915c0d0-f6fe-4132-9f36-8d1b78ae21a6",
     "versionCode": 1,
-    "versionLabel": "2.1",
+    "versionLabel": "3.0",
     "watchapp": {
         "hiddenApp": false,
         "watchface": false

@@ -1,77 +1,88 @@
-//version 2.2
-var API_BASE_URL = 'http://kyle1.azurewebsites.net/pebble/wikipedia/v1/',
-    token = 'xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx-xxxx',
-
-
-
-    aplite = (Pebble.getActiveWatchInfo() ? (Pebble.getActiveWatchInfo().platform || 'aplite') : 'aplite') == 'aplite',
-    ajax = require('ajax'),
+/*global escape*/
+var TimeText = require('ui/timetext'),
     settings = require('settings'),
-    UI = {
-        Vector2: require('vector2'),
-        Card: require('ui/card'),
-        Menu: require('ui/menu'),
-        Vibe: require('ui/vibe'),
-        Voice: require('ui/voice'),
-        Window: require('ui/window'),
-        Text: require('ui/text')
-    },
-    q = new UI.Card({
-        title: 'Loading…',
+     Vector2 = require('vector2'),
+      Window = require('ui/window'),
+      simply = require('ui/simply'),
+      config = require('./config'),
+        Card = require('ui/card'),
+        Menu = require('ui/menu'),
+        Text = require('ui/text'),
+        Clay = require('./clay'),
+        ajax = require('ajax'),
+    
+    platform = Pebble.getActiveWatchInfo() ? (Pebble.getActiveWatchInfo().platform || 'aplite') : 'aplite',
+      aplite = platform == 'aplite',
+    
+    NearbyMenu,
+    splashScreen = new Card({
+        title: 'Loading...',
         style: settings.option("LargeFontSize") ? 'large' : 'small',
-        titleColor: 'blue',
+        titleColor: aplite ? 'white' : 'blue',
         backgroundColor: 'black',
     }),
-    URL,
-    LOCAL = new UI.Menu({
-        sections: [{
-            items: [{}]
-        }]
+    clay = new Clay(config, null, {
+        autoHandleEvents: false
     });
-function DictationError(e) {
-    return {
-        'noMicrophone': 'Dictation failed becasue there is no microphone',
-        'systemAborted': 'Dictation was aborted',
-        'transcriptionRejected': 'The transcription was rejected',
-        'transcriptionRejectedWithError': 'The transcription was rejected with an error',
-        'connectivityError': 'There was an error with the connection to the phone',
-        'noSpeechDetected': 'No speech detected',
-        'disabled': 'Dictation is disabled',
-        'internalError': 'There was an internal error',
-        'recognizerError': 'There was a recognizer error',
-        'sessionAlreadyInProgress': 'There is already a dictation session in progress',
-    }[e.err] || 'There was an unknown error';
+
+Pebble.addEventListener('showConfiguration', function (e) {
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('webviewclosed', function (e) {
+  if (e && !e.response)
+      return console.error(e);
+  settings.option(clay.getSettings(e.response));
+});
+
+function trim(t, r) {
+    var n = t.length > r,
+        s = n ? t.substr(0, r - 1) : t;
+    return s = n ? s.substr(0, s.lastIndexOf(" ")) : s, n ? s + "..." : s;
 }
-function Show($input, $m, $itemIndex, $subtitle) {
-    console.log(URL = API_BASE_URL + (settings.option('CC') || 'en') + '/get/' + encodeURIComponent($input) + '/' + token);
+function NoResults(input, error) {
+    die('There are no articles on the ' + (settings.option('CC') || 'en').toUpperCase().replace('EN', 'English') +
+            ' Wikipedia about ' + input + '.\n\nTry changing the language in the settings page.', 'No Results');
+    console.warn('>>>> [fail] ' + error);
+}
+function Show(x, y, z) {
+    splashScreen.show();
     ajax({
-        url: URL,
+        url: 'http://'+settings.option('CC')+'.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&redirects=true&titles='+
+             encodeURIComponent(x),
         type: 'json'
     }, function (data) {
-        console.log(JSON.stringify(data, null, 4));
-        new UI.Card({
-            subtitle: data.title || "Error",
-            body: data.body,
-            scrollable: true,
-            style: settings.option("LargeFontSize") ? 'large' : 'small',
-            titleColor: 'white',
-            subtitleColor: aplite ? 'white' : 'pictonBlue',
-            backgroundColor: 'black',
-            bodyColor: 'white',
-        }).show();
-        q.hide();
-        if (typeof $itemIndex == 'number')
-            LOCAL.item(0, $itemIndex, {
-                subtitle: $subtitle || 'undefined'
-            });
-    }, function (e) {
-        die('\n There are no Wikipedia articles about \'' + $input + '\'', ' No Results');
+        try {
+            if (data.query === undefined || !data || !data.query || data.query.pages['-1'])
+                return NoResults(x, 'HTTP 204 (No Content)');
+            var object = data.query.pages[Object.keys(data.query.pages)[0]];
+            
+            new Card({
+                subtitle: object.title || "Error",
+                body: trim(object.extract.replace(/<\/?[^>]+(>|$)/g, ''), 500),
+                scrollable: true,
+                style: settings.option("LargeFontSize") ? 'large' : 'small',
+                titleColor: 'white',
+                subtitleColor: aplite ? 'white' : 'pictonBlue',
+                backgroundColor: 'black',
+                bodyColor: 'white',
+            }).show();
+            splashScreen.hide();
+            if (typeof y != 'undefined')
+                NearbyMenu.item(0, y.itemIndex, {
+                    subtitle: z || ''
+                });
+        } catch (e) {
+            NoResults(x, e);
+        }
+    }, function (err) {
+        NoResults(x, err);
     });
 }
 function die(msg, subtitle) {
-    console.log('[error] ' + msg);
-    new UI.Card({
-        subtitle: subtitle || ' Error!',
+    console.error('>>>> [error] ' + msg);
+    new Card({
+        subtitle: subtitle || 'Error',
         subicon: 'images/warn.png',
         body: '\n' + (msg || 'No Internet'),
         scrollable: true,
@@ -80,157 +91,124 @@ function die(msg, subtitle) {
         backgroundColor: 'black',
         bodyColor: 'white',
     }).show();
+    splashScreen.hide();
 }
-(function () {
-    for (var i = 0, arr = [['cq', true], ['CC', 'en'], ['units', true], ['LargeFontSize', false]]; i < 4; i++)
-        if (settings.option(arr[i][0]) == void (null))
-            settings.option(arr[i][0], arr[i][1]);
-}());
-settings.config({
-    url: API_BASE_URL + 'config.html'
-});
-var wind = new UI.Window({
+var main = new Window({
     backgroundColor: 'black',
     fullscreen: true,
     action: {
-        up: 'images/menu.png',
+        up: aplite ? null : 'images/menu.png',
         select: 'images/dice.png',
         down: 'images/pin.png',
         backgroundColor: aplite ? 'white' : 'blue'
     }
-}).add(new UI.Text({
-    color: 'white',
-    position: new UI.Vector2(5, 0),
-    size: new UI.Vector2(124, 60),
+}).add(new Text({
+    text: '\nWikipedia',
+    position: new Vector2(23, 125),
+    size: new Vector2(90, 36),
+    textOverflow: 'ellipsis',
     textAlign: 'left',
-    text: 'Wikipedia'
+    color: 'white',
+    font: 'gothic-18-bold'
+})).add(new TimeText({
+    position: new Vector2(3, 0),
+    size: new Vector2(90, 15),
+    text: "%I:%M %p",
+    font: 'gothic-28-bold',
+    color: '#00AAFF',
+    textAlign: 'left'
 })).show();
-wind.on('click', 'up', function () {
-    UI.Vibe.vibrate('short');
-    UI.Voice.dictate('start', settings.option("cq"), function (v) {
-        if (v.err) {
-            if (v.err != 'systemAborted')
-                die(DictationError(v), ' Dictation Error');
-            return;
-        } else {
-            q.show();
-            Show(z(v.transcription));
-        }
-    });
+
+main.on('click', 'up', function () {
+    if (aplite)
+        return console.info('aplite clicked up');
+    if (settings.option("vibe"))
+        simply.impl.vibe('short');
+    simply.impl.voiceDictationStart(function (v) {
+        if (v.err)
+            if (v.err == 'sessionAlreadyInProgress' || v.err == 'systemAborted')
+                simply.impl.voiceDictationStop();
+            else
+                die(v.err, 'Dictation Error');
+        else
+            Show(escape(v.transcription));
+    }, settings.option("cq"));
 });
-wind.on('click', 'select', function () {
-    UI.Vibe.vibrate('short');
-    q.show();
-    console.log(URL = API_BASE_URL + (settings.option('CC') || 'en') + '/random/' + token);
+main.on('click', 'select', function () {
+    if (settings.option("vibe"))
+        simply.impl.vibe('short');
+    splashScreen.show();
     ajax({
-        url: URL,
+        url: 'http://' + settings.option('CC') + '.wikipedia.org/w/api.php?action=query&format=json&rnnamespace=0&list=random',
         type: 'json'
     }, function (data) {
-        new UI.Card({
-            title: 'Random Article',
-            subtitle: data.title || "Error",
-            body: data.body,
-            scrollable: true,
-            style: settings.option("LargeFontSize") ? 'large' : 'small',
-            titleColor: 'white',
-            subtitleColor: aplite ? 'white' : 'pictonBlue',
-            backgroundColor: 'black',
-            bodyColor: 'white',
-        }).show();
-        q.hide();
+        Show(data.query.random[0].title);
     }, function (error) {
-        die(error, 'AJAX Error');
-        q.hide();
+        die(error, 'Location Error');
     });
 });
-wind.on('click', 'down', function () {
-    UI.Vibe.vibrate('short');
-    q.show();
+main.on('click', 'down', function () {
+    if (settings.option("vibe"))
+        simply.impl.vibe('short');
+    splashScreen.show();
     navigator.geolocation.getCurrentPosition(function (pos) {
-        console.log(JSON.stringify(pos, null, 4));
-        console.log(URL = API_BASE_URL + (settings.option('CC') || 'en') + '/geosearch/' + pos.coords.latitude + '/' + pos.coords.longitude + '/' + token);
         ajax({
-            url: URL,
+            url: 'http://' + settings.option('CC') +
+                 '.wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gsradius=10000&formatversion=2&gslimit=10&gscoord=' +
+                 encodeURIComponent(pos.coords.latitude + '|' + pos.coords.longitude),
             type: 'json'
-        }, function (json) {
-            console.log(JSON.stringify(json, null, 4));
-            LOCAL = new UI.Menu({
+        }, function (data) {
+            NearbyMenu = new Menu({
                 backgroundColor: 'black',
                 textColor: 'white',
                 highlightBackgroundColor: 'blue',
                 highlightTextColor: 'white',
-                sections: (function () {
-                    var sections = [{
-                        title: 'Nearby Places',
-                        items: []
-                    }];
-                    var metric = settings.option('units');
-                    for (var u, i = 0; i < json.length; ++i) {
-                        if (metric)
-                            u = Math.ceil(json[i].dist.toFixed(1)) + ' km';
-                        else
-                            u = ((json[i].dist / 8) * 5).toFixed(2) + ' miles';
-                        sections[0].items.push({
-                            title: json[i].title,
-                            subtitle: u,
-                            pageid: json[i].pageid,
-                            location: u
-                        });
-                    }
-                    return sections;
-                }())
+                sections: [{
+                    title: 'Nearby Places',
+                    items: (function () {
+                        var e = [];
+                        try {
+                            if (data.query.geosearch.length <= 0)
+                                return [{
+                                    title: 'No Results'
+                                }];
+                            var dist = function (i) {
+                                if (settings.option('units'))
+                                    return (data.query.geosearch[i].dist / 1000).toFixed(1) + ' km';
+                                else
+                                    return ((data.query.geosearch[i].dist / 8000) * 5).toFixed(2) + ' miles';
+                            };
+                            for (var i = 0; i < data.query.geosearch.length; i++)
+                                e[i] = {
+                                    title: data.query.geosearch[i].title,
+                                    subtitle: dist(i)
+                                };
+                            return e;
+                        } catch (err) {
+                            console.warn(err);
+                            return [{
+                                title: 'No Results',
+                                subtitle: 'Internal Error'
+                            }];
+                        }
+                    }())
+                }]
             }).show();
-            LOCAL.on('select', function (ea) {
-                Show(ea.item.title, null, ea.itemIndex, ea.item.subtitle);
-                LOCAL.item(0, ea.itemIndex, {
-                    subtitle: 'Loading…'
+            NearbyMenu.on('select', function (z) {
+                Show(z.item.title, z, z.item.subtitle);
+                NearbyMenu.item(0, z.itemIndex, {
+                    subtitle: 'Loading...'
                 });
             });
-            q.hide();
+            splashScreen.hide();
         }, function (error) {
-            die(error, 'AJAX error');
-            q.hide();
+            die(error, 'Network Error');
         });
     }, function (err) {
-        die(err.message, ' Location Error');
-        q.hide();
+        die(err.message, 'Location Error');
     }, {
         enableHighAccuracy: true,
         maximumAge: 10000,
         timeout: 7000
     });
 });
-function z(r) {
-    var o = [],
-        C = 0,
-        e = 0,
-        t = 0,
-        d = 0,
-        a = 0,
-        h = 0;
-    for (r += ''; C < r.length;)
-        t = r.charCodeAt(C),
-          191 >= t ? (
-            o[e++] = String.fromCharCode(t),
-            C++
-        ) : 223 >= t ? (
-            d = r.charCodeAt(C + 1),
-            o[e++] = String.fromCharCode((31 & t) << 6 | 63 & d),
-            C += 2
-        ) : 239 >= t ? (
-            d = r.charCodeAt(C + 1),
-            a = r.charCodeAt(C + 2),
-            o[e++] = String.fromCharCode((15 & t) << 12 | (63 & d) << 6 | 63 & a),
-            C += 3
-        ) : (
-            d = r.charCodeAt(C + 1),
-            a = r.charCodeAt(C + 2),
-            h = r.charCodeAt(C + 3),
-         t = (7 & t) << 18 | (63 & d) << 12 | (63 & a) << 6 | 63 & h,
-            t -= 65536,
-             o[e++] = String.fromCharCode(55296 | t >> 10 & 1023),
-             o[e++] = String.fromCharCode(56320 | 1023 & t),
-             C += 4
-        );
-    return o.join('');
-}
