@@ -4,8 +4,13 @@
         "location",
         "configurable"
     ],
+<<<<<<< HEAD
     "companyName": "Kyle H.",
     "longName": "Wikipedia",
+=======
+    "companyName": "Kyle",
+    "longName": "Wikipedia (unofficial)",
+>>>>>>> origin/master
     "projectType": "pebblejs",
     "resources": {
         "media": [

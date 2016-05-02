@@ -24,6 +24,7 @@ var TimeText = require('ui/timetext'),
     clay = new Clay(config, null, {
         autoHandleEvents: false
     });
+<<<<<<< HEAD
 
 Pebble.addEventListener('showConfiguration', function (e) {
   Pebble.openURL(clay.generateUrl());
@@ -44,6 +45,21 @@ function NoResults(input, error) {
     die('There are no articles on the ' + (settings.option('CC') || 'en').toUpperCase().replace('EN', 'English') +
             ' Wikipedia about ' + input + '.\n\nTry changing the language in the settings page.', 'No Results');
     console.warn('>>>> [fail] ' + error);
+=======
+function DictationError(e) {
+    return {
+        'noMicrophone': 'Dictation failed becasue there is no microphone.',
+        'systemAborted': 'Dictation was aborted.',
+        'transcriptionRejected': 'The transcription was rejected.',
+        'transcriptionRejectedWithError': 'The transcription was rejected with an error.',
+        'connectivityError': 'There was an error with the connection to the phone.',
+        'noSpeechDetected': 'No speech detected.',
+        'disabled': 'Dictation is disabled.',
+        'internalError': 'There was an internal error.',
+        'recognizerError': 'There was a recognizer error.',
+        'sessionAlreadyInProgress': 'There is already a dictation session in progress.',
+    }[e.err] || 'There was an unknown error.';
+>>>>>>> origin/master
 }
 function Show(x, y, z) {
     splashScreen.show();
