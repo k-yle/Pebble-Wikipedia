@@ -60,7 +60,7 @@ module.exports = [{
             { value: "kk",  label: "Қазақша / Qazaqşa / قازاقشا" },
             { value: "ro",  label: "Română" },
             { value: "ru",  label: "Русский" },
-            { value: "en",  label: "Simple English" },
+            { value: "simple",  label: "Simple English" },
             { value: "ceb", label: "Sinugboanong Binisaya" },
             { value: "sk",  label: "Slovenčina" },
             { value: "sl",  label: "Slovenščina" },
@@ -106,6 +106,7 @@ module.exports = [{
         }
     }]
 }, {
+    name: 'submit',
     type: "submit",
     defaultValue: "Save"
 }];

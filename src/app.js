@@ -1,71 +1,75 @@
 /*global escape*/
-var TimeText = require('ui/timetext'),
-    settings = require('settings'),
+var settings = require('settings'),
+     Feature = require('platform/feature'),
      Vector2 = require('vector2'),
       Window = require('ui/window'),
       simply = require('ui/simply'),
-      config = require('./config'),
         Card = require('ui/card'),
         Menu = require('ui/menu'),
         Text = require('ui/text'),
-        Clay = require('./clay'),
         ajax = require('ajax'),
     
-    platform = Pebble.getActiveWatchInfo() ? (Pebble.getActiveWatchInfo().platform || 'aplite') : 'aplite',
-      aplite = platform == 'aplite',
+    //platform = Pebble.getActiveWatchInfo() ? (Pebble.getActiveWatchInfo().platform || 'aplite') : 'aplite',
     
     NearbyMenu,
     splashScreen = new Card({
         title: 'Loading...',
         style: settings.option("LargeFontSize") ? 'large' : 'small',
-        titleColor: aplite ? 'white' : 'blue',
+        titleColor: Feature.color('blue', 'white'),
         backgroundColor: 'black',
     }),
-    clay = new Clay(config, null, {
-        autoHandleEvents: false
-    });
-<<<<<<< HEAD
+    status = Feature.color({
+        color: 'white',
+        backgroundColor: Feature.round('blue', 'pictonBlue'),
+        separator: Feature.round('none', 'dotted')
+    }, true);
 
-Pebble.addEventListener('showConfiguration', function (e) {
-  Pebble.openURL(clay.generateUrl());
+
+settings.config({
+    url: 'https://k-yle.github.io/Pebble-Wikipedia'
+}, function (e) {
+    var saved = new Card({
+        title: 'Saved!',
+        titleColor: Feature.color('pictonBlue', 'white'),
+        backgroundColor: 'black',
+        status: status
+    }).show();
+    setTimeout(function () {
+        saved.hide();
+    }, 2000);
 });
-
-Pebble.addEventListener('webviewclosed', function (e) {
-  if (e && !e.response)
-      return console.error(e);
-  settings.option(clay.getSettings(e.response));
-});
-
+(function (defaultSettings) {
+    for (var item in defaultSettings) 
+        if (settings.option(item) === undefined)
+            settings.option(item, defaultSettings[item]);
+}({
+    CC: 'en',
+    cq: true,
+    vibe: true,
+    units: true,
+    LargeFontSize: false
+}));
 function trim(t, r) {
     var n = t.length > r,
         s = n ? t.substr(0, r - 1) : t;
     return s = n ? s.substr(0, s.lastIndexOf(" ")) : s, n ? s + "..." : s;
 }
 function NoResults(input, error) {
-    die('There are no articles on the ' + (settings.option('CC') || 'en').toUpperCase().replace('EN', 'English') +
-            ' Wikipedia about ' + input + '.\n\nTry changing the language in the settings page.', 'No Results');
+    var lang = (settings.option('CC') || 'en').toUpperCase().replace('EN', 'English');
+    die('There are no articles on the ' + lang + ' Wikipedia about ' + input +
+        '. \n\n Try changing the language in the settings page.', 'No Results');
     console.warn('>>>> [fail] ' + error);
-=======
-function DictationError(e) {
-    return {
-        'noMicrophone': 'Dictation failed becasue there is no microphone.',
-        'systemAborted': 'Dictation was aborted.',
-        'transcriptionRejected': 'The transcription was rejected.',
-        'transcriptionRejectedWithError': 'The transcription was rejected with an error.',
-        'connectivityError': 'There was an error with the connection to the phone.',
-        'noSpeechDetected': 'No speech detected.',
-        'disabled': 'Dictation is disabled.',
-        'internalError': 'There was an internal error.',
-        'recognizerError': 'There was a recognizer error.',
-        'sessionAlreadyInProgress': 'There is already a dictation session in progress.',
-    }[e.err] || 'There was an unknown error.';
->>>>>>> origin/master
 }
 function Show(x, y, z) {
     splashScreen.show();
     ajax({
-        url: 'http://'+settings.option('CC')+'.wikipedia.org/w/api.php?action=query&prop=extracts&format=json&redirects=true&titles='+
-             encodeURIComponent(x),
+        url: 'http://' + settings.option('CC') + '.wikipedia.org/w/api.php?' + decodeURIComponent(ajax.formify({
+            action: 'query',
+            prop: 'extracts',
+            format: 'json',
+            redirects: true,
+            titles: x
+        })).replace(/(\%20| )/g, '+'),
         type: 'json'
     }, function (data) {
         try {
@@ -79,9 +83,10 @@ function Show(x, y, z) {
                 scrollable: true,
                 style: settings.option("LargeFontSize") ? 'large' : 'small',
                 titleColor: 'white',
-                subtitleColor: aplite ? 'white' : 'pictonBlue',
+                subtitleColor: Feature.color('pictonBlue', 'white' ),
                 backgroundColor: 'black',
                 bodyColor: 'white',
+                status: status
             }).show();
             splashScreen.hide();
             if (typeof y != 'undefined')
@@ -98,46 +103,40 @@ function Show(x, y, z) {
 function die(msg, subtitle) {
     console.error('>>>> [error] ' + msg);
     new Card({
-        subtitle: subtitle || 'Error',
-        subicon: 'images/warn.png',
+        title: subtitle || 'Error',
+        icon: 'images/warn.png',
         body: '\n' + (msg || 'No Internet'),
         scrollable: true,
         style: settings.option("LargeFontSize") ? 'large' : 'small',
-        subtitleColor: aplite ? 'white' : 'pictonBlue',
+        titleColor: Feature.color('pictonBlue', 'white'),
         backgroundColor: 'black',
         bodyColor: 'white',
+        status: status
     }).show();
     splashScreen.hide();
 }
 var main = new Window({
     backgroundColor: 'black',
-    fullscreen: true,
+    status: status,
     action: {
-        up: aplite ? null : 'images/menu.png',
+        up: Feature.microphone('images/menu.png', null),
         select: 'images/dice.png',
         down: 'images/pin.png',
-        backgroundColor: aplite ? 'white' : 'blue'
+        backgroundColor: Feature.color('blue', 'white')
     }
 }).add(new Text({
-    text: '\nWikipedia',
-    position: new Vector2(23, 125),
+    text: 'Wikipedia',
+    position: new Vector2(Feature.round(20, 10), Feature.round(10, 10)),
     size: new Vector2(90, 36),
     textOverflow: 'ellipsis',
     textAlign: 'left',
     color: 'white',
     font: 'gothic-18-bold'
-})).add(new TimeText({
-    position: new Vector2(3, 0),
-    size: new Vector2(90, 15),
-    text: "%I:%M %p",
-    font: 'gothic-28-bold',
-    color: '#00AAFF',
-    textAlign: 'left'
 })).show();
 
 main.on('click', 'up', function () {
-    if (aplite)
-        return console.info('aplite clicked up');
+    if (!Feature.microphone())
+        return console.info('no mic');
     if (settings.option("vibe"))
         simply.impl.vibe('short');
     simply.impl.voiceDictationStart(function (v) {
@@ -155,7 +154,12 @@ main.on('click', 'select', function () {
         simply.impl.vibe('short');
     splashScreen.show();
     ajax({
-        url: 'http://' + settings.option('CC') + '.wikipedia.org/w/api.php?action=query&format=json&rnnamespace=0&list=random',
+        url: 'http://' + settings.option('CC') + '.wikipedia.org/w/api.php?' + ajax.formify({
+            action: 'query',
+            format: 'json',
+            rnnamespace: 0,
+            list: 'random'
+        }),
         type: 'json'
     }, function (data) {
         Show(data.query.random[0].title);
@@ -169,9 +173,15 @@ main.on('click', 'down', function () {
     splashScreen.show();
     navigator.geolocation.getCurrentPosition(function (pos) {
         ajax({
-            url: 'http://' + settings.option('CC') +
-                 '.wikipedia.org/w/api.php?action=query&format=json&list=geosearch&gsradius=10000&formatversion=2&gslimit=10&gscoord=' +
-                 encodeURIComponent(pos.coords.latitude + '|' + pos.coords.longitude),
+            url: 'http://' + settings.option('CC') + '.wikipedia.org/w/api.php?' + ajax.formify({
+                action: 'query',
+                format: 'json',
+                list: 'geosearch',
+                gsradius: 10000,
+                formatversion: 2,
+                gslimit: 10,
+                gscoord: [pos.coords.latitude, pos.coords.longitude].join('|')
+            }),
             type: 'json'
         }, function (data) {
             NearbyMenu = new Menu({
@@ -179,6 +189,7 @@ main.on('click', 'down', function () {
                 textColor: 'white',
                 highlightBackgroundColor: 'blue',
                 highlightTextColor: 'white',
+                status: status,
                 sections: [{
                     title: 'Nearby Places',
                     items: (function () {
